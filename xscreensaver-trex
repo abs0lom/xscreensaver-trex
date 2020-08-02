@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# path of compared images
+IMG1=/tmp/xscreensaver-trex_image1.png
+IMG2=/tmp/xscreensaver-trex_image2.png
+
+# get resolutions of current screens
+x_screens=($(xrandr | grep "*" | cut -d "x" -f 1))
+y_screens=($(xrandr | grep "*" | cut -d "x" -f 2 | cut -d " " -f 1))
+
+nb_pixels=0
+
+# calc number of significant pixels
+for index in ${!x_screens[*]}
+do
+  nb_pixels=$(expr $nb_pixels + ${x_screens[index]} \* ${y_screens[index]})
+done
+
+significant=$(expr $nb_pixels / 300)
+
+# create image 1 if not exist
+if [ ! -f "$IMG1" ]
+then
+  import -window root -resize 1080 $IMG1
+fi
+
+# create image 2
+import -window root -resize 1080 $IMG2
+
+differences=$(compare -metric AE $IMG1 $IMG2 null: 2>&1)
+
+echo $differences " " $significant
+if [ "$differences" -gt "$significant" ]
+then
+  xscreensaver-command -deactivate
+fi
+
+mv $IMG2 $IMG1
+
